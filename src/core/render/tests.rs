@@ -135,6 +135,37 @@ fn background_wraps_the_whole_fragment() {
 }
 
 #[test]
+fn loom_folds_fragments_when_the_width_runs_out() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aaaa", None),
+            segment(SegmentId::Git, true, "bbbb", None),
+        ],
+    );
+    composition_pipeline().breathe_between_frames(&mut state);
+
+    let wide = loom::fold_into_lines(&state, 80);
+    assert_eq!(wide.len(), 1);
+    assert!(wide[0].contains("\x1b[37m|\x1b[0m"));
+
+    let narrow = loom::fold_into_lines(&state, 8);
+    assert_eq!(narrow.len(), 2);
+    assert!(!narrow[0].contains('|'));
+}
+
+#[test]
+fn loom_keeps_everything_on_one_line_when_it_fits() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![segment(SegmentId::Model, true, "a", None)],
+    );
+    composition_pipeline().breathe_between_frames(&mut state);
+    assert_eq!(loom::fold_into_lines(&state, 80).len(), 1);
+    assert!(loom::fold_into_lines(&state, 80)[0].contains('a'));
+}
+
+#[test]
 fn visible_width_ignores_escape_sequences() {
     assert_eq!(palette::visible_width("\x1b[38;5;1mabc\x1b[0m"), 3);
     assert_eq!(palette::visible_width("abc"), 3);
