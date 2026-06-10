@@ -166,6 +166,57 @@ fn loom_keeps_everything_on_one_line_when_it_fits() {
 }
 
 #[test]
+fn horizon_dissolves_fragments_that_spill_past_the_edge() {
+    let segments = vec![
+        segment(SegmentId::Model, true, "aaaa", None),
+        segment(SegmentId::Git, true, "bbbb", None),
+        segment(SegmentId::Directory, true, "cccc", None),
+    ];
+
+    let mut state =
+        RenderState::new(config_with_separator("|"), segments.clone()).with_horizon(Some(14));
+    standard_pipeline().breathe_between_frames(&mut state);
+    assert_eq!(state.fragments.len(), 2);
+    assert!(state.line.contains("aaaa"));
+    assert!(state.line.contains("bbbb"));
+    assert!(!state.line.contains("cccc"));
+
+    let mut wide = RenderState::new(config_with_separator("|"), segments).with_horizon(Some(120));
+    standard_pipeline().breathe_between_frames(&mut wide);
+    assert_eq!(wide.fragments.len(), 3);
+}
+
+#[test]
+fn horizon_never_lets_the_statusline_go_dark() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![segment(
+            SegmentId::Model,
+            true,
+            "a very long fragment",
+            None,
+        )],
+    )
+    .with_horizon(Some(3));
+    standard_pipeline().breathe_between_frames(&mut state);
+    assert_eq!(state.fragments.len(), 1);
+    assert!(!state.line.is_empty());
+}
+
+#[test]
+fn no_horizon_means_no_dissolution() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aaaa", None),
+            segment(SegmentId::Git, true, "bbbb", None),
+        ],
+    );
+    standard_pipeline().breathe_between_frames(&mut state);
+    assert_eq!(state.fragments.len(), 2);
+}
+
+#[test]
 fn visible_width_ignores_escape_sequences() {
     assert_eq!(palette::visible_width("\x1b[38;5;1mabc\x1b[0m"), 3);
     assert_eq!(palette::visible_width("abc"), 3);
