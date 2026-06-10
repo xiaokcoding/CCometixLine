@@ -10,6 +10,9 @@ pub mod phase;
 pub mod phases;
 pub mod state;
 
+#[cfg(test)]
+mod tests;
+
 pub use phase::{RenderPhase, RenderPipeline};
 pub use state::{Fragment, RenderState};
 
