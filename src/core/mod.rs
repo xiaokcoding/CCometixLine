@@ -1,3 +1,4 @@
+pub mod render;
 pub mod segments;
 pub mod statusline;
 
