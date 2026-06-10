@@ -13,7 +13,17 @@ impl StatusLineGenerator {
     }
 
     pub fn generate(&self, segments: Vec<(SegmentConfig, SegmentData)>) -> String {
-        let mut state = RenderState::new(self.config.clone(), segments);
+        self.generate_within(segments, None)
+    }
+
+    /// Render the statusline within an optional terminal width: segments that
+    /// would not fit dissolve from the end.
+    pub fn generate_within(
+        &self,
+        segments: Vec<(SegmentConfig, SegmentData)>,
+        horizon: Option<usize>,
+    ) -> String {
+        let mut state = RenderState::new(self.config.clone(), segments).with_horizon(horizon);
         standard_pipeline().breathe_between_frames(&mut state);
         state.line
     }

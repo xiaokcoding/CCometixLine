@@ -67,9 +67,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Collect segment data
     let segments_data = collect_all_segments(&config, &input);
 
-    // Render statusline
+    // Render statusline within the terminal width Claude Code reports
     let generator = StatusLineGenerator::new(config);
-    let statusline = generator.generate(segments_data);
+    let horizon = ccometixline::core::render::terminal_horizon();
+    let statusline = generator.generate_within(segments_data, horizon);
 
     println!("{}", statusline);
 
