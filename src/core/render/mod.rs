@@ -17,11 +17,14 @@ mod tests;
 pub use phase::{RenderPhase, RenderPipeline};
 pub use state::{Fragment, RenderState};
 
-use phases::{AwakeningPhase, CompositionPhase, ExhalePhase, SeamPhase};
+pub use phases::terminal_horizon;
 
-/// The canonical pipeline: awaken, compose, weave seams, exhale.
+use phases::{AwakeningPhase, CompositionPhase, ExhalePhase, HorizonPhase, SeamPhase};
+
+/// The canonical pipeline: awaken, compose, weave seams, honor the horizon,
+/// exhale.
 pub fn standard_pipeline() -> RenderPipeline {
-    composition_pipeline().then(ExhalePhase)
+    composition_pipeline().then(HorizonPhase).then(ExhalePhase)
 }
 
 /// The pipeline up to (but not including) the final exhale, for callers that

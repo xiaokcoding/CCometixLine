@@ -20,6 +20,7 @@ pub struct RenderState {
     pub fragments: Vec<Fragment>,
     pub seams: Vec<String>,
     pub line: String,
+    pub horizon: Option<usize>,
 }
 
 impl RenderState {
@@ -30,6 +31,14 @@ impl RenderState {
             fragments: Vec::new(),
             seams: Vec::new(),
             line: String::new(),
+            horizon: None,
         }
+    }
+
+    /// Give the frame an awareness of how wide the terminal is, so the
+    /// horizon phase can dissolve whatever would not fit.
+    pub fn with_horizon(mut self, horizon: Option<usize>) -> Self {
+        self.horizon = horizon;
+        self
     }
 }
