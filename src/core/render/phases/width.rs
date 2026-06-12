@@ -45,7 +45,7 @@ pub fn expand_flex(state: &mut RenderState) {
             remainder -= 1;
             gap += 1;
         }
-        fragment.body = " ".repeat(gap.max(1));
+        fragment.body = " ".repeat(if state.max_width.is_some() { gap } else { gap.max(1) });
     }
 }
 
