@@ -508,6 +508,8 @@ impl App {
                         SegmentId::Update => "Update",
                         SegmentId::TokenRate => "Token Rate",
                         SegmentId::WeeklyUsage => "Weekly Usage",
+                        SegmentId::Flex => "Flex Gap",
+                        SegmentId::Custom => "Custom",
                     };
                     let is_enabled = segment.enabled;
                     self.status_message = Some(format!(
@@ -537,6 +539,8 @@ impl App {
                                 SegmentId::Update => "Update",
                                 SegmentId::TokenRate => "Token Rate",
                                 SegmentId::WeeklyUsage => "Weekly Usage",
+                                SegmentId::Flex => "Flex Gap",
+                                SegmentId::Custom => "Custom",
                             };
                             let is_enabled = segment.enabled;
                             self.status_message = Some(format!(

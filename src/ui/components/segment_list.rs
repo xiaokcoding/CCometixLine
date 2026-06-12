@@ -59,6 +59,8 @@ impl SegmentListComponent {
                     SegmentId::Update => "Update",
                     SegmentId::TokenRate => "Token Rate",
                     SegmentId::WeeklyUsage => "Weekly Usage",
+                    SegmentId::Flex => "Flex Gap",
+                    SegmentId::Custom => "Custom",
                 };
 
                 if is_selected {

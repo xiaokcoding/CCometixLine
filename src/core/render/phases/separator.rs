@@ -21,6 +21,11 @@ impl RenderPhase for SeparatorPhase {
 pub fn build_separators(state: &mut RenderState) {
     state.separators.clear();
     for i in 0..state.fragments.len().saturating_sub(1) {
+        // A flex gap replaces the separator on both of its sides.
+        if state.fragments[i].flex || state.fragments[i + 1].flex {
+            state.separators.push(String::new());
+            continue;
+        }
         let rendered = render_separator(
             &state.config.style.separator,
             state.fragments[i].background.as_ref(),

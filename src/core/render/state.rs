@@ -8,6 +8,8 @@ pub struct Fragment {
     pub body: String,
     pub background: Option<AnsiColor>,
     pub priority: i64,
+    /// Elastic gap: expands to absorb the slack when a width budget is known.
+    pub flex: bool,
 }
 
 /// Everything a frame knows about itself while it moves through the pipeline.

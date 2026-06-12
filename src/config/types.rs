@@ -15,20 +15,39 @@ pub struct Config {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WidthConfig {
-    /// Columns subtracted from `COLUMNS` before fitting the line, leaving
-    /// room for Claude Code's auto-compact message. Ignored when the exact
+    /// How `COLUMNS` translates into a width budget. Ignored when the exact
     /// `CCLINE_WIDTH` env override is set.
+    pub mode: WidthMode,
+    /// Columns subtracted from `COLUMNS` before fitting the line, leaving
+    /// room for Claude Code's auto-compact message (modes `reserve` and
+    /// `adaptive` past the threshold).
     pub reserve: usize,
+    /// Context usage percentage at which `adaptive` mode stops using the
+    /// full width and starts reserving room for the auto-compact message.
+    pub adaptive_threshold: f64,
     /// When greater than 1 and a width budget is known, wrap fragments
     /// across up to this many lines instead of truncating. Capped by the
     /// `LINES` env var when present.
     pub max_lines: usize,
 }
 
+/// `full`: use all of `COLUMNS`. `reserve`: always keep `reserve` columns
+/// free. `adaptive`: full width while context usage is below the threshold,
+/// reserve once the auto-compact message could appear.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WidthMode {
+    Full,
+    Reserve,
+    Adaptive,
+}
+
 impl Default for WidthConfig {
     fn default() -> Self {
         Self {
+            mode: WidthMode::Reserve,
             reserve: 40,
+            adaptive_threshold: 60.0,
             max_lines: 1,
         }
     }
@@ -100,6 +119,10 @@ pub enum SegmentId {
     Update,
     TokenRate,
     WeeklyUsage,
+    /// Width-aware elastic gap: pushes everything after it to the right edge.
+    Flex,
+    /// User-defined content: static `text` or the stdout of a `command`.
+    Custom,
 }
 
 // Legacy compatibility structure

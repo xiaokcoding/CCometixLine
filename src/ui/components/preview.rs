@@ -180,6 +180,21 @@ impl PreviewComponent {
                     secondary: "· O 13%".to_string(),
                     metadata: HashMap::new(),
                 },
+                SegmentId::Flex => SegmentData {
+                    primary: "".to_string(),
+                    secondary: "".to_string(),
+                    metadata: HashMap::new(),
+                },
+                SegmentId::Custom => SegmentData {
+                    primary: segment_config
+                        .options
+                        .get("text")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("custom")
+                        .to_string(),
+                    secondary: "".to_string(),
+                    metadata: HashMap::new(),
+                },
                 SegmentId::Update => SegmentData {
                     primary: format!("v{}", env!("CARGO_PKG_VERSION")),
                     secondary: "".to_string(),

@@ -83,6 +83,14 @@ impl Segment for ContextWindowSegment {
     }
 }
 
+/// Current context usage in percent, for callers outside the segment —
+/// e.g. the adaptive width mode deciding whether auto-compact is near.
+pub fn context_percentage(input: &InputData) -> Option<f64> {
+    let limit = ContextWindowSegment::get_context_limit_for_model(&input.model.id);
+    let used = parse_transcript_usage(&input.transcript_path)?;
+    Some(used as f64 / limit as f64 * 100.0)
+}
+
 fn parse_transcript_usage<P: AsRef<Path>>(transcript_path: P) -> Option<u32> {
     let path = transcript_path.as_ref();
 
