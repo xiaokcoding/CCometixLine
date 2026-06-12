@@ -1,4 +1,4 @@
-use crate::config::{Config, SegmentConfig, StyleMode};
+use crate::config::{Config, SegmentConfig, SegmentId, StyleMode};
 use crate::core::render::palette;
 use crate::core::render::phase::RenderPhase;
 use crate::core::render::state::{Fragment, RenderState};
@@ -10,12 +10,24 @@ pub struct CompositionPhase;
 impl RenderPhase for CompositionPhase {
     fn apply(&self, state: &mut RenderState) {
         for (config, data) in &state.segments {
+            if config.id == SegmentId::Flex {
+                // An elastic gap: starts empty, the width phase gives it
+                // room (or a single space when no budget is known).
+                state.fragments.push(Fragment {
+                    body: String::new(),
+                    background: None,
+                    priority: segment_priority(config),
+                    flex: true,
+                });
+                continue;
+            }
             let body = render_segment(&state.config, config, data);
             if !body.is_empty() {
                 state.fragments.push(Fragment {
                     body,
                     background: config.colors.background.clone(),
                     priority: segment_priority(config),
+                    flex: false,
                 });
             }
         }

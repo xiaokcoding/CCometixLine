@@ -8,3 +8,4 @@ pub mod segment_list;
 pub mod separator_editor;
 pub mod settings;
 pub mod theme_selector;
+pub mod width_settings;

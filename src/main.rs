@@ -81,8 +81,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Render statusline within the terminal width Claude Code reports
     let width_config = config.width.clone();
+    // Adaptive mode needs the context usage; reuse the collected segment's
+    // number when available rather than re-parsing the transcript.
+    let context_pct = match width_config.mode {
+        ccometixline::config::WidthMode::Adaptive => segments_data
+            .iter()
+            .find(|(c, _)| c.id == ccometixline::config::SegmentId::ContextWindow)
+            .and_then(|(_, d)| d.metadata.get("percentage"))
+            .and_then(|p| p.parse::<f64>().ok())
+            .or_else(|| ccometixline::core::segments::context_window::context_percentage(&input)),
+        _ => None,
+    };
     let generator = StatusLineGenerator::new(config);
-    let max_width = ccometixline::core::render::terminal_width(&width_config);
+    let max_width = ccometixline::core::render::terminal_width(&width_config, context_pct);
     let statusline = match (max_width, width_config.max_lines) {
         (Some(width), lines) if lines > 1 => {
             let cap = ccometixline::core::render::terminal_lines()

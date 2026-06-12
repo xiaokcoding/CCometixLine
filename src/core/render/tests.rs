@@ -357,3 +357,97 @@ fn separators_are_rebuilt_after_a_middle_fragment_is_removed() {
     assert!(state.separators[0].contains("\x1b[48;5;4m"));
     assert!(state.separators[0].contains("\x1b[38;5;1m"));
 }
+
+#[test]
+fn flex_gap_pushes_following_fragments_to_the_right_edge() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aa", None),
+            segment(SegmentId::Flex, true, "", None),
+            segment(SegmentId::Git, true, "bb", None),
+        ],
+    )
+    .with_max_width(Some(20));
+    standard_pipeline().run(&mut state);
+    // "* aa" (4) + gap + "* bb" (4): the gap absorbs the remaining 12 cols.
+    assert_eq!(palette::visible_width(&state.line), 20);
+    assert!(state.line.starts_with("* aa"));
+    assert!(state.line.ends_with("* bb"));
+    // No separator is rendered on either side of the gap.
+    assert_eq!(state.separators, vec![String::new(), String::new()]);
+}
+
+#[test]
+fn multiple_flex_gaps_split_the_slack() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aa", None),
+            segment(SegmentId::Flex, true, "", None),
+            segment(SegmentId::Git, true, "bb", None),
+            segment(SegmentId::Flex, true, "", None),
+            segment(SegmentId::Usage, true, "cc", None),
+        ],
+    )
+    .with_max_width(Some(21));
+    standard_pipeline().run(&mut state);
+    // 12 content cols leave 9 of slack: 5 + 4 across the two gaps.
+    assert_eq!(palette::visible_width(&state.line), 21);
+    let gaps: Vec<usize> = state
+        .fragments
+        .iter()
+        .filter(|f| f.flex)
+        .map(|f| f.body.len())
+        .collect();
+    assert_eq!(gaps, vec![5, 4]);
+}
+
+#[test]
+fn flex_gap_degrades_to_a_single_space_without_a_width_budget() {
+    let state = run(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aa", None),
+            segment(SegmentId::Flex, true, "", None),
+            segment(SegmentId::Git, true, "bb", None),
+        ],
+    );
+    assert_eq!(state.line, "* aa * bb");
+}
+
+#[test]
+fn flex_gap_is_not_sacrificed_while_content_remains() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aaaaaaaa", None),
+            segment(SegmentId::Flex, true, "", None),
+            segment(SegmentId::Git, true, "bbbbbbbb", None),
+        ],
+    )
+    .with_max_width(Some(12));
+    standard_pipeline().run(&mut state);
+    // The width phase drops content fragments, never the flex gap itself.
+    assert!(state.fragments.iter().any(|f| f.flex));
+    assert!(palette::visible_width(&state.line) <= 12);
+}
+
+#[test]
+fn osc_sequences_are_zero_width() {
+    // OSC 8 hyperlink, BEL-terminated.
+    let bel = "\x1b]8;;https://example.com\x07link\x1b]8;;\x07";
+    assert_eq!(palette::visible_width(bel), 4);
+    // ST (ESC \) terminated.
+    let st = "\x1b]8;;https://example.com\x1b\\link\x1b]8;;\x1b\\";
+    assert_eq!(palette::visible_width(st), 4);
+}
+
+#[test]
+fn truncate_passes_osc_sequences_through() {
+    let text = "\x1b]8;;https://example.com\x07linktext\x1b]8;;\x07";
+    let truncated = palette::truncate_visible(text, 5);
+    assert!(truncated.starts_with("\x1b]8;;https://example.com\x07"));
+    assert!(truncated.contains('…'));
+    assert_eq!(palette::visible_width(&truncated), 5);
+}

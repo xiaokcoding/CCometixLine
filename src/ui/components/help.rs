@@ -46,6 +46,8 @@ impl HelpComponent {
                 ("[P]", "Switch Theme"),
                 ("[R]", "Reset"),
                 ("[E]", "Edit Separator"),
+                ("[O]", "Width"),
+                ("[+/-]", "Priority"),
                 ("[S]", "Save Config"),
                 ("[W]", "Write Theme"),
                 ("[Ctrl+S]", "Save Theme"),

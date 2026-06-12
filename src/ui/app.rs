@@ -9,6 +9,7 @@ use crate::ui::components::{
     separator_editor::SeparatorEditorComponent,
     settings::SettingsComponent,
     theme_selector::ThemeSelectorComponent,
+    width_settings::WidthSettingsComponent,
 };
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
@@ -38,6 +39,7 @@ pub struct App {
     separator_editor: SeparatorEditorComponent,
     settings: SettingsComponent,
     theme_selector: ThemeSelectorComponent,
+    width_settings: WidthSettingsComponent,
     help: HelpComponent,
     status_message: Option<String>,
 }
@@ -58,6 +60,7 @@ impl App {
             separator_editor: SeparatorEditorComponent::new(),
             settings: SettingsComponent::new(),
             theme_selector: ThemeSelectorComponent::new(),
+            width_settings: WidthSettingsComponent::new(),
             help: HelpComponent::new(),
             status_message: None,
         };
@@ -103,7 +106,22 @@ impl App {
                 }
 
                 // Handle popup events first
-                if app.name_input.is_open {
+                if app.width_settings.is_open {
+                    match key.code {
+                        KeyCode::Esc => app.width_settings.close(),
+                        KeyCode::Enter => {
+                            app.config.width = app.width_settings.get_config();
+                            app.width_settings.close();
+                            app.preview.update_preview(&app.config);
+                            app.status_message = Some("Width settings applied".to_string());
+                        }
+                        KeyCode::Up => app.width_settings.move_selection(-1),
+                        KeyCode::Down => app.width_settings.move_selection(1),
+                        KeyCode::Left => app.width_settings.adjust(-1),
+                        KeyCode::Right => app.width_settings.adjust(1),
+                        _ => {}
+                    }
+                } else if app.name_input.is_open {
                     match key.code {
                         KeyCode::Esc => app.name_input.close(),
                         KeyCode::Enter => {
@@ -229,6 +247,11 @@ impl App {
                         KeyCode::Char('p') => app.cycle_theme(),
                         KeyCode::Char('r') => app.reset_to_theme_defaults(),
                         KeyCode::Char('e') | KeyCode::Char('E') => app.open_separator_editor(),
+                        KeyCode::Char('o') | KeyCode::Char('O') => {
+                            app.width_settings.open(&app.config.width)
+                        }
+                        KeyCode::Char('+') | KeyCode::Char('=') => app.adjust_priority(1),
+                        KeyCode::Char('-') | KeyCode::Char('_') => app.adjust_priority(-1),
                         _ => {}
                     }
                 }
@@ -310,6 +333,8 @@ impl App {
                 "[P] Switch Theme",
                 "[R] Reset",
                 "[E] Edit Separator",
+                "[O] Width",
+                "[+/-] Priority",
                 "[S] Save Config",
                 "[W] Write Theme",
                 "[Ctrl+S] Save Theme",
@@ -453,6 +478,9 @@ impl App {
         if self.separator_editor.is_open {
             self.separator_editor.render(f, f.area());
         }
+        if self.width_settings.is_open {
+            self.width_settings.render(f, f.area());
+        }
     }
 
     fn move_selection(&mut self, delta: i32) {
@@ -508,6 +536,8 @@ impl App {
                         SegmentId::Update => "Update",
                         SegmentId::TokenRate => "Token Rate",
                         SegmentId::WeeklyUsage => "Weekly Usage",
+                        SegmentId::Flex => "Flex Gap",
+                        SegmentId::Custom => "Custom",
                     };
                     let is_enabled = segment.enabled;
                     self.status_message = Some(format!(
@@ -537,6 +567,8 @@ impl App {
                                 SegmentId::Update => "Update",
                                 SegmentId::TokenRate => "Token Rate",
                                 SegmentId::WeeklyUsage => "Weekly Usage",
+                                SegmentId::Flex => "Flex Gap",
+                                SegmentId::Custom => "Custom",
                             };
                             let is_enabled = segment.enabled;
                             self.status_message = Some(format!(
@@ -709,5 +741,27 @@ impl App {
     fn open_separator_editor(&mut self) {
         self.status_message = Some("Opening separator editor...".to_string());
         self.separator_editor.open(&self.config.style.separator);
+    }
+
+    /// Step the selected segment's truncation priority (`options.priority`,
+    /// default 0): higher values survive longer on narrow terminals.
+    fn adjust_priority(&mut self, delta: i64) {
+        if let Some(segment) = self.config.segments.get_mut(self.selected_segment) {
+            let current = segment
+                .options
+                .get("priority")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0);
+            let next = current + delta;
+            if next == 0 {
+                segment.options.remove("priority");
+            } else {
+                segment
+                    .options
+                    .insert("priority".to_string(), serde_json::json!(next));
+            }
+            self.status_message = Some(format!("Priority: {}", next));
+            self.preview.update_preview(&self.config);
+        }
     }
 }

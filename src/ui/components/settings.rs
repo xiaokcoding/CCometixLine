@@ -38,6 +38,8 @@ impl SettingsComponent {
                 SegmentId::Update => "Update",
                 SegmentId::TokenRate => "Token Rate",
                 SegmentId::WeeklyUsage => "Weekly Usage",
+                SegmentId::Flex => "Flex Gap",
+                SegmentId::Custom => "Custom",
             };
             let current_icon = match config.style.mode {
                 StyleMode::Plain => &segment.icon.plain,
@@ -268,6 +270,14 @@ impl SettingsComponent {
                         }
                     ))],
                 ),
+                Line::from(format!(
+                    "├─ Priority: {} (+/- to adjust)",
+                    segment
+                        .options
+                        .get("priority")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0)
+                )),
                 create_field_line(
                     FieldSelection::Options,
                     vec![Span::raw(format!(

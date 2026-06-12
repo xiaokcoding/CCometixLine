@@ -162,6 +162,17 @@ pub fn collect_all_segments(
                 let segment = WeeklyUsageSegment::new();
                 segment.collect(input)
             }
+            // A flex gap has no content of its own; the composition phase
+            // recognizes the id and the width phase gives it room.
+            crate::config::SegmentId::Flex => Some(SegmentData {
+                primary: String::new(),
+                secondary: String::new(),
+                metadata: std::collections::HashMap::new(),
+            }),
+            crate::config::SegmentId::Custom => {
+                let segment = CustomSegment::from_options(&segment_config.options);
+                segment.collect(input)
+            }
             crate::config::SegmentId::Update => {
                 let segment = UpdateSegment::new();
                 segment.collect(input)
