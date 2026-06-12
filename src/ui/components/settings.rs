@@ -270,6 +270,14 @@ impl SettingsComponent {
                         }
                     ))],
                 ),
+                Line::from(format!(
+                    "├─ Priority: {} (+/- to adjust)",
+                    segment
+                        .options
+                        .get("priority")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0)
+                )),
                 create_field_line(
                     FieldSelection::Options,
                     vec![Span::raw(format!(

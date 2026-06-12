@@ -48,5 +48,7 @@
       `ESC ] … BEL` 与 `ESC ] … ESC \`，OSC 8 超链接计零宽、截断时透传）
 - [x] 主输出路径的快照测试（tests/render_snapshots.rs：9 个内置主题 ×
       4 档宽度的 golden 文件，`UPDATE_SNAPSHOTS=1` 刷新）
-- [ ] TUI 配置器暴露 width.mode / reserve / max_lines / priority
-      （UI 改动较重，单独排期）
+- [x] TUI 配置器暴露 width.mode / reserve / max_lines / priority
+      （`O` 打开 Width Settings 弹窗：↑↓ 选字段、←→ 调整、Enter 应用；
+      主面板 `+`/`-` 调整选中段的 `options.priority`，归零时移除该键；
+      custom 段等任意 options 的通用编辑器另行排期）
