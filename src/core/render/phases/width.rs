@@ -73,7 +73,8 @@ pub fn truncate_to_width(state: &mut RenderState, max_width: usize) {
 fn pick_victim(state: &RenderState) -> usize {
     let mut victim = state.fragments.len() - 1;
     for (i, fragment) in state.fragments.iter().enumerate() {
-        if fragment.priority < state.fragments[victim].priority {
+        if fragment.priority <= state.fragments[victim].priority {
+
             victim = i;
         }
     }
