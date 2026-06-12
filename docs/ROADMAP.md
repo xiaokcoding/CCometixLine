@@ -44,7 +44,9 @@
 
 ## P3 — 工程质量
 
-- OSC 转义序列支持（visible_width / truncate_visible 目前只处理 CSI；
-  引入 OSC 8 超链接前必须补）
-- TUI 配置器暴露 width.reserve / max_lines / priority
-- 主输出路径的快照测试（各主题 × 宽度矩阵）
+- [x] OSC 转义序列支持（visible_width / truncate_visible 识别
+      `ESC ] … BEL` 与 `ESC ] … ESC \`，OSC 8 超链接计零宽、截断时透传）
+- [x] 主输出路径的快照测试（tests/render_snapshots.rs：9 个内置主题 ×
+      4 档宽度的 golden 文件，`UPDATE_SNAPSHOTS=1` 刷新）
+- [ ] TUI 配置器暴露 width.mode / reserve / max_lines / priority
+      （UI 改动较重，单独排期）

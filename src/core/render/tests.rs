@@ -432,3 +432,22 @@ fn flex_gap_is_not_sacrificed_while_content_remains() {
     assert!(state.fragments.iter().any(|f| f.flex));
     assert!(palette::visible_width(&state.line) <= 12);
 }
+
+#[test]
+fn osc_sequences_are_zero_width() {
+    // OSC 8 hyperlink, BEL-terminated.
+    let bel = "\x1b]8;;https://example.com\x07link\x1b]8;;\x07";
+    assert_eq!(palette::visible_width(bel), 4);
+    // ST (ESC \) terminated.
+    let st = "\x1b]8;;https://example.com\x1b\\link\x1b]8;;\x1b\\";
+    assert_eq!(palette::visible_width(st), 4);
+}
+
+#[test]
+fn truncate_passes_osc_sequences_through() {
+    let text = "\x1b]8;;https://example.com\x07linktext\x1b]8;;\x07";
+    let truncated = palette::truncate_visible(text, 5);
+    assert!(truncated.starts_with("\x1b]8;;https://example.com\x07"));
+    assert!(truncated.contains('…'));
+    assert_eq!(palette::visible_width(&truncated), 5);
+}

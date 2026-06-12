@@ -69,6 +69,58 @@ pub fn styled(text: &str, color: Option<&AnsiColor>, bold: bool) -> String {
     }
 }
 
+/// Escape-sequence scanner state shared by [`visible_width`] and
+/// [`truncate_visible`]: CSI (`ESC [ ... letter`) and OSC (`ESC ] ... BEL`
+/// or `ESC ] ... ESC \`) sequences occupy no terminal cells.
+#[derive(PartialEq)]
+enum EscState {
+    Text,
+    Intro,
+    Csi,
+    Osc,
+    OscEsc,
+}
+
+impl EscState {
+    fn step(&mut self, ch: char) -> bool {
+        match self {
+            EscState::Text => {
+                if ch == '\x1b' {
+                    *self = EscState::Intro;
+                    return false;
+                }
+                return true;
+            }
+            EscState::Intro => {
+                *self = match ch {
+                    '[' => EscState::Csi,
+                    ']' => EscState::Osc,
+                    // Two-character sequence like ESC \ or ESC c: done.
+                    _ => EscState::Text,
+                };
+            }
+            EscState::Csi => {
+                if ch.is_alphabetic() {
+                    *self = EscState::Text;
+                }
+            }
+            EscState::Osc => match ch {
+                '\x07' => *self = EscState::Text,
+                '\x1b' => *self = EscState::OscEsc,
+                _ => {}
+            },
+            EscState::OscEsc => {
+                *self = if ch == '\\' {
+                    EscState::Text
+                } else {
+                    EscState::Osc
+                };
+            }
+        }
+        false
+    }
+}
+
 /// Number of terminal cells the text occupies once escape sequences vanish.
 ///
 /// Uses Unicode display width, so CJK characters and other wide glyphs count
@@ -77,24 +129,12 @@ pub fn visible_width(text: &str) -> usize {
     use unicode_width::UnicodeWidthChar;
 
     let mut width = 0usize;
-    let mut in_escape = false;
-    let mut chars = text.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch == '\x1b' {
-            in_escape = true;
-            if chars.peek() == Some(&'[') {
-                chars.next();
-            }
-        } else if in_escape {
-            if ch.is_alphabetic() {
-                in_escape = false;
-            }
-        } else {
+    let mut state = EscState::Text;
+    for ch in text.chars() {
+        if state.step(ch) {
             width += ch.width().unwrap_or(0);
         }
     }
-
     width
 }
 
@@ -111,29 +151,17 @@ pub fn truncate_visible(text: &str, max_width: usize) -> String {
     let budget = max_width.saturating_sub(1); // room for the ellipsis
     let mut out = String::new();
     let mut width = 0usize;
-    let mut in_escape = false;
-    let mut chars = text.chars().peekable();
+    let mut state = EscState::Text;
 
-    while let Some(ch) = chars.next() {
-        if ch == '\x1b' {
-            in_escape = true;
-            out.push(ch);
-            if chars.peek() == Some(&'[') {
-                out.push(chars.next().unwrap());
-            }
-        } else if in_escape {
-            out.push(ch);
-            if ch.is_alphabetic() {
-                in_escape = false;
-            }
-        } else {
+    for ch in text.chars() {
+        if state.step(ch) {
             let w = ch.width().unwrap_or(0);
             if width + w > budget {
                 break;
             }
             width += w;
-            out.push(ch);
         }
+        out.push(ch);
     }
 
     out.push('…');

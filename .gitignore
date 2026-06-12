@@ -5,4 +5,8 @@ claude-powerline-features.md
 CLAUDE.md
 PRD.md
 .claude/
-tests/
+
+# Local tooling
+.ace-tool/
+.trellis/
+AGENTS.md
