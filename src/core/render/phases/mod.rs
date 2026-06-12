@@ -1,9 +1,11 @@
-mod awakening;
 mod composition;
-mod exhale;
-mod seam;
+mod filter;
+mod join;
+mod separator;
+mod width;
 
-pub use awakening::AwakeningPhase;
-pub use composition::{settle_into_position, CompositionPhase};
-pub use exhale::ExhalePhase;
-pub use seam::{powerline_arrow, SeamPhase, POWERLINE_ARROW};
+pub use composition::{render_segment, CompositionPhase};
+pub use filter::FilterPhase;
+pub use join::JoinPhase;
+pub use separator::{build_separators, powerline_arrow, SeparatorPhase, POWERLINE_ARROW};
+pub use width::{terminal_lines, terminal_width, truncate_to_width, WidthPhase};

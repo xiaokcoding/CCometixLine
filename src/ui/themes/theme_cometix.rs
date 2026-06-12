@@ -162,3 +162,46 @@ pub fn usage_segment() -> SegmentConfig {
         },
     }
 }
+
+pub fn token_rate_segment() -> SegmentConfig {
+    SegmentConfig {
+        id: SegmentId::TokenRate,
+        enabled: false,
+        icon: IconConfig {
+            plain: "\u{26a1}".to_string(),
+            nerd_font: "\u{f0e7}".to_string(),
+        },
+        colors: ColorConfig {
+            icon: Some(AnsiColor::Color16 { c16: 11 }), // Yellow
+            text: Some(AnsiColor::Color16 { c16: 11 }),
+            background: None,
+        },
+        styles: TextStyleConfig::default(),
+        options: HashMap::new(),
+    }
+}
+
+pub fn weekly_usage_segment() -> SegmentConfig {
+    SegmentConfig {
+        id: SegmentId::WeeklyUsage,
+        enabled: false,
+        icon: IconConfig {
+            plain: "\u{1f4c5}".to_string(),
+            nerd_font: "\u{f073}".to_string(),
+        },
+        colors: ColorConfig {
+            icon: Some(AnsiColor::Color16 { c16: 13 }), // Magenta
+            text: Some(AnsiColor::Color16 { c16: 13 }),
+            background: None,
+        },
+        styles: TextStyleConfig::default(),
+        options: {
+            let mut opts = HashMap::new();
+            opts.insert(
+                "cache_duration".to_string(),
+                serde_json::Value::Number(600.into()),
+            );
+            opts
+        },
+    }
+}

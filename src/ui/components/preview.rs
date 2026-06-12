@@ -170,6 +170,16 @@ impl PreviewComponent {
                         map
                     },
                 },
+                SegmentId::TokenRate => SegmentData {
+                    primary: "42 tok/s".to_string(),
+                    secondary: "".to_string(),
+                    metadata: HashMap::new(),
+                },
+                SegmentId::WeeklyUsage => SegmentData {
+                    primary: "W 42%".to_string(),
+                    secondary: "· O 13%".to_string(),
+                    metadata: HashMap::new(),
+                },
                 SegmentId::Update => SegmentData {
                     primary: format!("v{}", env!("CARGO_PKG_VERSION")),
                     secondary: "".to_string(),

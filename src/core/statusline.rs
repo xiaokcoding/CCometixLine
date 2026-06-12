@@ -1,5 +1,5 @@
 use crate::config::{Config, SegmentConfig};
-use crate::core::render::{composition_pipeline, loom, standard_pipeline, RenderState};
+use crate::core::render::{composition_pipeline, standard_pipeline, wrap, RenderState};
 use crate::core::segments::SegmentData;
 
 /// A thin facade over the phase-driven render pipeline in [`crate::core::render`].
@@ -13,9 +13,38 @@ impl StatusLineGenerator {
     }
 
     pub fn generate(&self, segments: Vec<(SegmentConfig, SegmentData)>) -> String {
-        let mut state = RenderState::new(self.config.clone(), segments);
-        standard_pipeline().breathe_between_frames(&mut state);
+        self.generate_with_width(segments, None)
+    }
+
+    /// Render the statusline within an optional terminal width: segments that
+    /// would not fit are dropped from the end.
+    pub fn generate_with_width(
+        &self,
+        segments: Vec<(SegmentConfig, SegmentData)>,
+        max_width: Option<usize>,
+    ) -> String {
+        let mut state = RenderState::new(self.config.clone(), segments).with_max_width(max_width);
+        standard_pipeline().run(&mut state);
         state.line
+    }
+
+    /// Render the statusline wrapped across up to `max_lines` lines of at
+    /// most `max_width` columns each, instead of truncating.
+    pub fn generate_multiline(
+        &self,
+        segments: Vec<(SegmentConfig, SegmentData)>,
+        max_width: usize,
+        max_lines: usize,
+    ) -> String {
+        let mut state = RenderState::new(self.config.clone(), segments);
+        composition_pipeline().run(&mut state);
+
+        let lines = wrap::wrap_fragments(&state, max_width);
+        lines
+            .into_iter()
+            .take(max_lines.max(1))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     /// Generate statusline for TUI preview with proper width calculation
@@ -48,18 +77,15 @@ impl StatusLineGenerator {
         use ratatui::text::{Line, Span, Text};
 
         let mut state = RenderState::new(self.config.clone(), segments);
-        composition_pipeline().breathe_between_frames(&mut state);
+        composition_pipeline().run(&mut state);
 
-        let lines = loom::fold_into_lines(&state, max_width as usize);
+        let lines = wrap::wrap_fragments(&state, max_width as usize);
 
         let mut tui_lines = Vec::new();
         for line in lines {
-            if let Ok(text) = line.clone().into_text() {
-                for tui_line in text.lines {
-                    tui_lines.push(tui_line);
-                }
-            } else {
-                tui_lines.push(Line::from(vec![Span::raw(line)]));
+            match line.as_str().into_text() {
+                Ok(text) => tui_lines.extend(text.lines),
+                Err(_) => tui_lines.push(Line::from(vec![Span::raw(line)])),
             }
         }
 
@@ -121,6 +147,19 @@ pub fn collect_all_segments(
             }
             crate::config::SegmentId::OutputStyle => {
                 let segment = OutputStyleSegment::new();
+                segment.collect(input)
+            }
+            crate::config::SegmentId::TokenRate => {
+                let window = segment_config
+                    .options
+                    .get("window_seconds")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(60);
+                let segment = TokenRateSegment::new().with_window(window);
+                segment.collect(input)
+            }
+            crate::config::SegmentId::WeeklyUsage => {
+                let segment = WeeklyUsageSegment::new();
                 segment.collect(input)
             }
             crate::config::SegmentId::Update => {

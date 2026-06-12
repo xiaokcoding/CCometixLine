@@ -38,6 +38,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
+    // Render subagent rows for Claude Code's subagentStatusLine setting
+    if cli.subagent {
+        let stdin = io::stdin();
+        let input: ccometixline::core::subagent::SubagentInput =
+            serde_json::from_reader(stdin.lock())?;
+        let rows = ccometixline::core::subagent::render_rows(&input);
+        if !rows.is_empty() {
+            println!("{}", rows);
+        }
+        return Ok(());
+    }
+
     // Load configuration
     let mut config = Config::load().unwrap_or_else(|_| Config::default());
 
@@ -67,9 +79,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Collect segment data
     let segments_data = collect_all_segments(&config, &input);
 
-    // Render statusline
+    // Render statusline within the terminal width Claude Code reports
+    let width_config = config.width.clone();
     let generator = StatusLineGenerator::new(config);
-    let statusline = generator.generate(segments_data);
+    let max_width = ccometixline::core::render::terminal_width(&width_config);
+    let statusline = match (max_width, width_config.max_lines) {
+        (Some(width), lines) if lines > 1 => {
+            let cap = ccometixline::core::render::terminal_lines()
+                .map_or(lines, |terminal| lines.min(terminal));
+            generator.generate_multiline(segments_data, width, cap)
+        }
+        _ => generator.generate_with_width(segments_data, max_width),
+    };
 
     println!("{}", statusline);
 

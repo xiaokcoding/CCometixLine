@@ -1,6 +1,6 @@
 // Theme presets for TUI configuration
 
-use crate::config::{Config, StyleConfig, StyleMode};
+use crate::config::{Config, StyleConfig, StyleMode, WidthConfig};
 
 // Import all theme modules
 use super::{
@@ -137,8 +137,11 @@ impl ThemePresets {
                 theme_cometix::cost_segment(),
                 theme_cometix::session_segment(),
                 theme_cometix::output_style_segment(),
+                theme_cometix::token_rate_segment(),
+                theme_cometix::weekly_usage_segment(),
             ],
             theme: "cometix".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -157,8 +160,11 @@ impl ThemePresets {
                 theme_default::cost_segment(),
                 theme_default::session_segment(),
                 theme_default::output_style_segment(),
+                theme_default::token_rate_segment(),
+                theme_default::weekly_usage_segment(),
             ],
             theme: "default".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -179,6 +185,7 @@ impl ThemePresets {
                 theme_minimal::output_style_segment(),
             ],
             theme: "minimal".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -199,6 +206,7 @@ impl ThemePresets {
                 theme_gruvbox::output_style_segment(),
             ],
             theme: "gruvbox".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -219,6 +227,7 @@ impl ThemePresets {
                 theme_nord::output_style_segment(),
             ],
             theme: "nord".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -239,6 +248,7 @@ impl ThemePresets {
                 theme_powerline_dark::output_style_segment(),
             ],
             theme: "powerline-dark".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -259,6 +269,7 @@ impl ThemePresets {
                 theme_powerline_light::output_style_segment(),
             ],
             theme: "powerline-light".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -279,6 +290,7 @@ impl ThemePresets {
                 theme_powerline_rose_pine::output_style_segment(),
             ],
             theme: "powerline-rose-pine".to_string(),
+            width: WidthConfig::default(),
         }
     }
 
@@ -299,6 +311,7 @@ impl ThemePresets {
                 theme_powerline_tokyo_night::output_style_segment(),
             ],
             theme: "powerline-tokyo-night".to_string(),
+            width: WidthConfig::default(),
         }
     }
 }
