@@ -1,26 +1,25 @@
-use crate::config::{Config, SegmentConfig};
+use crate::config::{AnsiColor, Config, SegmentConfig};
 use crate::core::segments::SegmentData;
 
-/// A single rendered piece of the statusline, still aware of the segment
-/// configuration it was born from so later phases can reason about color
-/// transitions and widths.
+/// A single rendered piece of the statusline, keeping the background color it
+/// was rendered with so later phases can compute separator color transitions.
 pub struct Fragment {
     pub body: String,
-    pub config: SegmentConfig,
+    pub background: Option<AnsiColor>,
 }
 
 /// Everything a frame knows about itself while it moves through the pipeline.
 ///
-/// Each phase reads what earlier phases left behind and settles its own
-/// contribution into place: `segments` feed `fragments`, fragments grow
-/// `seams` between them, and the whole thing condenses into `line`.
+/// Each phase reads what earlier phases left behind and adds its own
+/// contribution: `segments` feed `fragments`, fragments get `separators`
+/// between them, and the whole thing is joined into `line`.
 pub struct RenderState {
     pub config: Config,
     pub segments: Vec<(SegmentConfig, SegmentData)>,
     pub fragments: Vec<Fragment>,
-    pub seams: Vec<String>,
+    pub separators: Vec<String>,
     pub line: String,
-    pub horizon: Option<usize>,
+    pub max_width: Option<usize>,
 }
 
 impl RenderState {
@@ -29,16 +28,15 @@ impl RenderState {
             config,
             segments,
             fragments: Vec::new(),
-            seams: Vec::new(),
+            separators: Vec::new(),
             line: String::new(),
-            horizon: None,
+            max_width: None,
         }
     }
 
-    /// Give the frame an awareness of how wide the terminal is, so the
-    /// horizon phase can dissolve whatever would not fit.
-    pub fn with_horizon(mut self, horizon: Option<usize>) -> Self {
-        self.horizon = horizon;
+    /// Set the terminal width budget the width phase truncates to.
+    pub fn with_max_width(mut self, max_width: Option<usize>) -> Self {
+        self.max_width = max_width;
         self
     }
 }

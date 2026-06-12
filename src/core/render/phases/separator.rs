@@ -5,27 +5,23 @@ use crate::core::render::state::RenderState;
 
 pub const POWERLINE_ARROW: &str = "\u{e0b0}";
 
-/// Weaves a seam between every pair of neighbouring fragments — either a
+/// Builds a separator between every pair of neighbouring fragments — either a
 /// powerline arrow carrying the color transition, or a plain separator.
-pub struct SeamPhase;
+pub struct SeparatorPhase;
 
-impl RenderPhase for SeamPhase {
-    fn name(&self) -> &'static str {
-        "seam"
-    }
-
-    fn pass_through(&self, state: &mut RenderState) {
+impl RenderPhase for SeparatorPhase {
+    fn apply(&self, state: &mut RenderState) {
         let separator = state.config.style.separator.clone();
 
         for i in 0..state.fragments.len().saturating_sub(1) {
-            let seam = if separator == POWERLINE_ARROW {
-                let prev_bg = state.fragments[i].config.colors.background.as_ref();
-                let curr_bg = state.fragments[i + 1].config.colors.background.as_ref();
+            let rendered = if separator == POWERLINE_ARROW {
+                let prev_bg = state.fragments[i].background.as_ref();
+                let curr_bg = state.fragments[i + 1].background.as_ref();
                 powerline_arrow(prev_bg, curr_bg)
             } else {
                 format!("\x1b[37m{}\x1b[0m", separator)
             };
-            state.seams.push(seam);
+            state.separators.push(rendered);
         }
     }
 }

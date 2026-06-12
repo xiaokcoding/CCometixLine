@@ -49,12 +49,12 @@ fn segment(
 
 fn run(config: Config, segments: Vec<(SegmentConfig, SegmentData)>) -> RenderState {
     let mut state = RenderState::new(config, segments);
-    standard_pipeline().breathe_between_frames(&mut state);
+    standard_pipeline().run(&mut state);
     state
 }
 
 #[test]
-fn awakening_drops_disabled_segments() {
+fn filter_drops_disabled_segments() {
     let state = run(
         config_with_separator("|"),
         vec![
@@ -68,7 +68,7 @@ fn awakening_drops_disabled_segments() {
 }
 
 #[test]
-fn empty_frame_exhales_nothing() {
+fn empty_frame_renders_nothing() {
     let state = run(config_with_separator("|"), vec![]);
     assert_eq!(state.line, "");
 }
@@ -82,8 +82,8 @@ fn plain_separator_is_painted_white() {
             segment(SegmentId::Git, true, "b", None),
         ],
     );
-    assert_eq!(state.seams.len(), 1);
-    assert_eq!(state.seams[0], "\x1b[37m|\x1b[0m");
+    assert_eq!(state.separators.len(), 1);
+    assert_eq!(state.separators[0], "\x1b[37m|\x1b[0m");
     assert!(!state.line.ends_with("\x1b[0m"));
 }
 
@@ -116,7 +116,7 @@ fn powerline_frame_resets_at_the_end() {
         ],
     );
     assert!(state.line.ends_with("\x1b[0m"));
-    assert!(state.seams[0].contains("\u{e0b0}"));
+    assert!(state.separators[0].contains("\u{e0b0}"));
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn background_wraps_the_whole_fragment() {
 }
 
 #[test]
-fn loom_folds_fragments_when_the_width_runs_out() {
+fn wrap_breaks_fragments_when_the_width_runs_out() {
     let mut state = RenderState::new(
         config_with_separator("|"),
         vec![
@@ -143,30 +143,30 @@ fn loom_folds_fragments_when_the_width_runs_out() {
             segment(SegmentId::Git, true, "bbbb", None),
         ],
     );
-    composition_pipeline().breathe_between_frames(&mut state);
+    composition_pipeline().run(&mut state);
 
-    let wide = loom::fold_into_lines(&state, 80);
+    let wide = wrap::wrap_fragments(&state, 80);
     assert_eq!(wide.len(), 1);
     assert!(wide[0].contains("\x1b[37m|\x1b[0m"));
 
-    let narrow = loom::fold_into_lines(&state, 8);
+    let narrow = wrap::wrap_fragments(&state, 8);
     assert_eq!(narrow.len(), 2);
     assert!(!narrow[0].contains('|'));
 }
 
 #[test]
-fn loom_keeps_everything_on_one_line_when_it_fits() {
+fn wrap_keeps_everything_on_one_line_when_it_fits() {
     let mut state = RenderState::new(
         config_with_separator("|"),
         vec![segment(SegmentId::Model, true, "a", None)],
     );
-    composition_pipeline().breathe_between_frames(&mut state);
-    assert_eq!(loom::fold_into_lines(&state, 80).len(), 1);
-    assert!(loom::fold_into_lines(&state, 80)[0].contains('a'));
+    composition_pipeline().run(&mut state);
+    assert_eq!(wrap::wrap_fragments(&state, 80).len(), 1);
+    assert!(wrap::wrap_fragments(&state, 80)[0].contains('a'));
 }
 
 #[test]
-fn horizon_dissolves_fragments_that_spill_past_the_edge() {
+fn width_phase_drops_fragments_that_spill_past_the_edge() {
     let segments = vec![
         segment(SegmentId::Model, true, "aaaa", None),
         segment(SegmentId::Git, true, "bbbb", None),
@@ -174,20 +174,20 @@ fn horizon_dissolves_fragments_that_spill_past_the_edge() {
     ];
 
     let mut state =
-        RenderState::new(config_with_separator("|"), segments.clone()).with_horizon(Some(14));
-    standard_pipeline().breathe_between_frames(&mut state);
+        RenderState::new(config_with_separator("|"), segments.clone()).with_max_width(Some(14));
+    standard_pipeline().run(&mut state);
     assert_eq!(state.fragments.len(), 2);
     assert!(state.line.contains("aaaa"));
     assert!(state.line.contains("bbbb"));
     assert!(!state.line.contains("cccc"));
 
-    let mut wide = RenderState::new(config_with_separator("|"), segments).with_horizon(Some(120));
-    standard_pipeline().breathe_between_frames(&mut wide);
+    let mut wide = RenderState::new(config_with_separator("|"), segments).with_max_width(Some(120));
+    standard_pipeline().run(&mut wide);
     assert_eq!(wide.fragments.len(), 3);
 }
 
 #[test]
-fn horizon_never_lets_the_statusline_go_dark() {
+fn width_phase_never_drops_the_last_fragment() {
     let mut state = RenderState::new(
         config_with_separator("|"),
         vec![segment(
@@ -197,14 +197,14 @@ fn horizon_never_lets_the_statusline_go_dark() {
             None,
         )],
     )
-    .with_horizon(Some(3));
-    standard_pipeline().breathe_between_frames(&mut state);
+    .with_max_width(Some(3));
+    standard_pipeline().run(&mut state);
     assert_eq!(state.fragments.len(), 1);
     assert!(!state.line.is_empty());
 }
 
 #[test]
-fn no_horizon_means_no_dissolution() {
+fn no_max_width_means_no_truncation() {
     let mut state = RenderState::new(
         config_with_separator("|"),
         vec![
@@ -212,7 +212,7 @@ fn no_horizon_means_no_dissolution() {
             segment(SegmentId::Git, true, "bbbb", None),
         ],
     );
-    standard_pipeline().breathe_between_frames(&mut state);
+    standard_pipeline().run(&mut state);
     assert_eq!(state.fragments.len(), 2);
 }
 
@@ -221,4 +221,30 @@ fn visible_width_ignores_escape_sequences() {
     assert_eq!(palette::visible_width("\x1b[38;5;1mabc\x1b[0m"), 3);
     assert_eq!(palette::visible_width("abc"), 3);
     assert_eq!(palette::visible_width(""), 0);
+}
+
+#[test]
+fn visible_width_counts_wide_characters_as_two_columns() {
+    assert_eq!(palette::visible_width("你好"), 4);
+    assert_eq!(palette::visible_width("\x1b[38;5;1m你好\x1b[0m"), 4);
+    assert_eq!(palette::visible_width("a你b"), 4);
+}
+
+#[test]
+fn width_phase_budgets_cjk_fragments_correctly() {
+    // Each fragment body is "* 你好" = 1 (icon) + 1 (space) + 4 (CJK) = 6 cols;
+    // separator "|" adds 1. Two fragments + separator = 13 columns.
+    let segments = vec![
+        segment(SegmentId::Model, true, "你好", None),
+        segment(SegmentId::Git, true, "你好", None),
+    ];
+
+    let mut fits =
+        RenderState::new(config_with_separator("|"), segments.clone()).with_max_width(Some(13));
+    standard_pipeline().run(&mut fits);
+    assert_eq!(fits.fragments.len(), 2);
+
+    let mut tight = RenderState::new(config_with_separator("|"), segments).with_max_width(Some(12));
+    standard_pipeline().run(&mut tight);
+    assert_eq!(tight.fragments.len(), 1);
 }

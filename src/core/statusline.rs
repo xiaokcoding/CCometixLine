@@ -1,5 +1,5 @@
 use crate::config::{Config, SegmentConfig};
-use crate::core::render::{composition_pipeline, loom, standard_pipeline, RenderState};
+use crate::core::render::{composition_pipeline, standard_pipeline, wrap, RenderState};
 use crate::core::segments::SegmentData;
 
 /// A thin facade over the phase-driven render pipeline in [`crate::core::render`].
@@ -13,18 +13,18 @@ impl StatusLineGenerator {
     }
 
     pub fn generate(&self, segments: Vec<(SegmentConfig, SegmentData)>) -> String {
-        self.generate_within(segments, None)
+        self.generate_with_width(segments, None)
     }
 
     /// Render the statusline within an optional terminal width: segments that
-    /// would not fit dissolve from the end.
-    pub fn generate_within(
+    /// would not fit are dropped from the end.
+    pub fn generate_with_width(
         &self,
         segments: Vec<(SegmentConfig, SegmentData)>,
-        horizon: Option<usize>,
+        max_width: Option<usize>,
     ) -> String {
-        let mut state = RenderState::new(self.config.clone(), segments).with_horizon(horizon);
-        standard_pipeline().breathe_between_frames(&mut state);
+        let mut state = RenderState::new(self.config.clone(), segments).with_max_width(max_width);
+        standard_pipeline().run(&mut state);
         state.line
     }
 
@@ -58,18 +58,15 @@ impl StatusLineGenerator {
         use ratatui::text::{Line, Span, Text};
 
         let mut state = RenderState::new(self.config.clone(), segments);
-        composition_pipeline().breathe_between_frames(&mut state);
+        composition_pipeline().run(&mut state);
 
-        let lines = loom::fold_into_lines(&state, max_width as usize);
+        let lines = wrap::wrap_fragments(&state, max_width as usize);
 
         let mut tui_lines = Vec::new();
         for line in lines {
-            if let Ok(text) = line.clone().into_text() {
-                for tui_line in text.lines {
-                    tui_lines.push(tui_line);
-                }
-            } else {
-                tui_lines.push(Line::from(vec![Span::raw(line)]));
+            match line.as_str().into_text() {
+                Ok(text) => tui_lines.extend(text.lines),
+                Err(_) => tui_lines.push(Line::from(vec![Span::raw(line)])),
             }
         }
 

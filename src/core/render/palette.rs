@@ -70,7 +70,12 @@ pub fn styled(text: &str, color: Option<&AnsiColor>, bold: bool) -> String {
 }
 
 /// Number of terminal cells the text occupies once escape sequences vanish.
+///
+/// Uses Unicode display width, so CJK characters and other wide glyphs count
+/// as two columns instead of one.
 pub fn visible_width(text: &str) -> usize {
+    use unicode_width::UnicodeWidthChar;
+
     let mut width = 0usize;
     let mut in_escape = false;
     let mut chars = text.chars().peekable();
@@ -86,7 +91,7 @@ pub fn visible_width(text: &str) -> usize {
                 in_escape = false;
             }
         } else {
-            width += 1;
+            width += ch.width().unwrap_or(0);
         }
     }
 

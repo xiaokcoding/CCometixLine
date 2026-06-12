@@ -4,30 +4,26 @@ use crate::core::render::phase::RenderPhase;
 use crate::core::render::state::{Fragment, RenderState};
 use crate::core::segments::SegmentData;
 
-/// Turns each segment into a colored fragment and settles it into the frame.
+/// Turns each segment into a colored fragment.
 pub struct CompositionPhase;
 
 impl RenderPhase for CompositionPhase {
-    fn name(&self) -> &'static str {
-        "composition"
-    }
-
-    fn pass_through(&self, state: &mut RenderState) {
+    fn apply(&self, state: &mut RenderState) {
         for (config, data) in &state.segments {
-            let body = settle_into_position(&state.config, config, data);
+            let body = render_segment(&state.config, config, data);
             if !body.is_empty() {
                 state.fragments.push(Fragment {
                     body,
-                    config: config.clone(),
+                    background: config.colors.background.clone(),
                 });
             }
         }
     }
 }
 
-/// Render a single segment: icon, primary and secondary text, each dressed in
-/// its configured colors, padded when a background color frames the whole.
-pub fn settle_into_position(style: &Config, config: &SegmentConfig, data: &SegmentData) -> String {
+/// Render a single segment: icon, primary and secondary text, each in its
+/// configured colors, padded when a background color frames the whole.
+pub fn render_segment(style: &Config, config: &SegmentConfig, data: &SegmentData) -> String {
     let icon = data
         .metadata
         .get("dynamic_icon")

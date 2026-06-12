@@ -69,8 +69,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Render statusline within the terminal width Claude Code reports
     let generator = StatusLineGenerator::new(config);
-    let horizon = ccometixline::core::render::terminal_horizon();
-    let statusline = generator.generate_within(segments_data, horizon);
+    let max_width = ccometixline::core::render::terminal_width();
+    let statusline = generator.generate_with_width(segments_data, max_width);
 
     println!("{}", statusline);
 

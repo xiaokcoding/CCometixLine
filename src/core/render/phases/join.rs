@@ -1,24 +1,20 @@
 use crate::core::render::phase::RenderPhase;
-use crate::core::render::phases::seam::POWERLINE_ARROW;
+use crate::core::render::phases::separator::POWERLINE_ARROW;
 use crate::core::render::state::RenderState;
 
-/// The final breath: fragments and seams interleave into one line of text.
-pub struct ExhalePhase;
+/// Joins fragments and separators into one line of text.
+pub struct JoinPhase;
 
-impl RenderPhase for ExhalePhase {
-    fn name(&self) -> &'static str {
-        "exhale"
-    }
-
-    fn pass_through(&self, state: &mut RenderState) {
+impl RenderPhase for JoinPhase {
+    fn apply(&self, state: &mut RenderState) {
         if state.fragments.is_empty() {
             state.line = String::new();
             return;
         }
 
         let mut line = state.fragments[0].body.clone();
-        for (fragment, seam) in state.fragments[1..].iter().zip(&state.seams) {
-            line.push_str(seam);
+        for (fragment, separator) in state.fragments[1..].iter().zip(&state.separators) {
+            line.push_str(separator);
             line.push_str(&fragment.body);
         }
 
