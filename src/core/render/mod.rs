@@ -5,6 +5,7 @@
 //! frame — collecting segments, composing fragments, weaving seams, and
 //! finally exhaling a single line of text.
 
+pub mod loom;
 pub mod palette;
 pub mod phase;
 pub mod phases;
@@ -20,9 +21,14 @@ use phases::{AwakeningPhase, CompositionPhase, ExhalePhase, SeamPhase};
 
 /// The canonical pipeline: awaken, compose, weave seams, exhale.
 pub fn standard_pipeline() -> RenderPipeline {
+    composition_pipeline().then(ExhalePhase)
+}
+
+/// The pipeline up to (but not including) the final exhale, for callers that
+/// want to lay fragments out themselves — e.g. wrapping across lines.
+pub fn composition_pipeline() -> RenderPipeline {
     RenderPipeline::new()
         .then(AwakeningPhase)
         .then(CompositionPhase)
         .then(SeamPhase)
-        .then(ExhalePhase)
 }
