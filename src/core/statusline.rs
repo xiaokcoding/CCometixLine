@@ -39,30 +39,11 @@ impl StatusLineGenerator {
     }
 
     pub fn generate(&self, segments: Vec<(SegmentConfig, SegmentData)>) -> String {
-        let mut output = Vec::new();
-        let enabled_segments: Vec<_> = segments
-            .into_iter()
-            .filter(|(config, _)| config.enabled)
-            .collect();
+        use crate::core::render::{standard_pipeline, RenderState};
 
-        for (config, data) in enabled_segments.iter() {
-            let rendered = self.render_segment(config, data);
-            if !rendered.is_empty() {
-                output.push(rendered);
-            }
-        }
-
-        if output.is_empty() {
-            return String::new();
-        }
-
-        // Handle Powerline arrow separators with color transition
-        if self.config.style.separator == "\u{e0b0}" {
-            self.join_with_powerline_arrows(&output, &enabled_segments)
-        } else {
-            // For all other separators, use white color and simple join
-            self.join_with_white_separators(&output)
-        }
+        let mut state = RenderState::new(self.config.clone(), segments);
+        standard_pipeline().breathe_between_frames(&mut state);
+        state.line
     }
 
     /// Generate statusline for TUI preview with proper width calculation
@@ -354,53 +335,6 @@ impl StatusLineGenerator {
                 format!("\x1b[48;2;{};{};{}m", r, g, b)
             }
         }
-    }
-
-    /// Join segments with white separators (non-Powerline)
-    fn join_with_white_separators(&self, rendered_segments: &[String]) -> String {
-        if rendered_segments.is_empty() {
-            return String::new();
-        }
-
-        // Use white color for separator
-        let white_separator = format!("\x1b[37m{}\x1b[0m", self.config.style.separator);
-        rendered_segments.join(&white_separator)
-    }
-
-    /// Join segments with Powerline arrow separators with proper color transitions
-    fn join_with_powerline_arrows(
-        &self,
-        rendered_segments: &[String],
-        segment_configs: &[(SegmentConfig, SegmentData)],
-    ) -> String {
-        if rendered_segments.is_empty() {
-            return String::new();
-        }
-
-        if rendered_segments.len() == 1 {
-            return rendered_segments[0].clone();
-        }
-
-        let mut result = rendered_segments[0].clone();
-
-        for (i, _) in rendered_segments.iter().enumerate().skip(1) {
-            let prev_bg = segment_configs
-                .get(i - 1)
-                .and_then(|(config, _)| config.colors.background.as_ref());
-            let curr_bg = segment_configs
-                .get(i)
-                .and_then(|(config, _)| config.colors.background.as_ref());
-
-            // Create Powerline arrow with color transition
-            let arrow = self.create_powerline_arrow(prev_bg, curr_bg);
-
-            result.push_str(&arrow);
-            result.push_str(&rendered_segments[i]);
-        }
-
-        // Reset colors at the end
-        result.push_str("\x1b[0m");
-        result
     }
 
     /// Create a Powerline arrow with proper color transition
