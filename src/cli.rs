@@ -15,6 +15,10 @@ pub struct Cli {
     /// Patch Claude Code cli.js to disable context warnings
     #[arg(long = "patch")]
     pub patch: Option<String>,
+
+    /// Render subagent rows for Claude Code's subagentStatusLine setting
+    #[arg(long = "subagent")]
+    pub subagent: bool,
 }
 
 impl Cli {

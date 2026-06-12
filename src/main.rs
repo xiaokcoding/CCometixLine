@@ -38,6 +38,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
+    // Render subagent rows for Claude Code's subagentStatusLine setting
+    if cli.subagent {
+        let stdin = io::stdin();
+        let input: ccometixline::core::subagent::SubagentInput =
+            serde_json::from_reader(stdin.lock())?;
+        let rows = ccometixline::core::subagent::render_rows(&input);
+        if !rows.is_empty() {
+            println!("{}", rows);
+        }
+        return Ok(());
+    }
+
     // Load configuration
     let mut config = Config::load().unwrap_or_else(|_| Config::default());
 

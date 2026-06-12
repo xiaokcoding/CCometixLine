@@ -16,6 +16,9 @@
 - [x] 多行输出 `width.max_lines`（>1 时按段折行而非截断，受 LINES 封顶）
 - [x] 段截断优先级：`[[segments]] options.priority = N`（高优先级存活更久，
       默认从末尾丢弃）
+- [x] Subagent statusline：`ccline --subagent` 渲染 `subagentStatusLine`
+      每行（状态图标着色 + 名称/描述 + 右对齐 token 数，按 `columns` 截断；
+      Rust 生态首个支持）
 
 ## P1 — 体验追平（ccstatusline 已有、我们缺失）
 
@@ -31,9 +34,7 @@
 1. **Token 速率 widget**：输入/输出 tokens/s，可配时间窗（ccstatusline v2.2.x
    的新卖点，用量可见性是 30 天调研中最高频诉求）。
 2. **周度 Sonnet/Opus 用量拆分**：对齐 Claude Code `/usage` 的模型拆分口径。
-3. **Subagent statusline**：官方已通过 `subagentStatusLine` 下发 `columns` 与
-   `tasks`（id/name/status/tokenCount…）数据，Rust 生态目前没有竞品支持，
-   是空白点，也是 CCometixLine 高性能定位的天然主场。
+3. ~~Subagent statusline~~ ✅ 已实现（`ccline --subagent`）。
 
 ## P3 — 工程质量
 
