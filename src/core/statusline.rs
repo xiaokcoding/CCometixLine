@@ -28,6 +28,25 @@ impl StatusLineGenerator {
         state.line
     }
 
+    /// Render the statusline wrapped across up to `max_lines` lines of at
+    /// most `max_width` columns each, instead of truncating.
+    pub fn generate_multiline(
+        &self,
+        segments: Vec<(SegmentConfig, SegmentData)>,
+        max_width: usize,
+        max_lines: usize,
+    ) -> String {
+        let mut state = RenderState::new(self.config.clone(), segments);
+        composition_pipeline().run(&mut state);
+
+        let lines = wrap::wrap_fragments(&state, max_width);
+        lines
+            .into_iter()
+            .take(max_lines.max(1))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     /// Generate statusline for TUI preview with proper width calculation
     /// This method handles ANSI escape sequences properly for ratatui rendering
     pub fn generate_for_tui(

@@ -2,10 +2,12 @@ use crate::config::{AnsiColor, Config, SegmentConfig};
 use crate::core::segments::SegmentData;
 
 /// A single rendered piece of the statusline, keeping the background color it
-/// was rendered with so later phases can compute separator color transitions.
+/// was rendered with (for separator color transitions) and its truncation
+/// priority (higher survives longer when the terminal is narrow).
 pub struct Fragment {
     pub body: String,
     pub background: Option<AnsiColor>,
+    pub priority: i64,
 }
 
 /// Everything a frame knows about itself while it moves through the pipeline.

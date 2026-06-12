@@ -97,3 +97,46 @@ pub fn visible_width(text: &str) -> usize {
 
     width
 }
+
+/// Cut text down to at most `max_width` visible columns, appending `…` and a
+/// reset when anything was removed. Escape sequences pass through unchanged
+/// and cost nothing.
+pub fn truncate_visible(text: &str, max_width: usize) -> String {
+    use unicode_width::UnicodeWidthChar;
+
+    if visible_width(text) <= max_width {
+        return text.to_string();
+    }
+
+    let budget = max_width.saturating_sub(1); // room for the ellipsis
+    let mut out = String::new();
+    let mut width = 0usize;
+    let mut in_escape = false;
+    let mut chars = text.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\x1b' {
+            in_escape = true;
+            out.push(ch);
+            if chars.peek() == Some(&'[') {
+                out.push(chars.next().unwrap());
+            }
+        } else if in_escape {
+            out.push(ch);
+            if ch.is_alphabetic() {
+                in_escape = false;
+            }
+        } else {
+            let w = ch.width().unwrap_or(0);
+            if width + w > budget {
+                break;
+            }
+            width += w;
+            out.push(ch);
+        }
+    }
+
+    out.push('…');
+    out.push_str("\x1b[0m");
+    out
+}

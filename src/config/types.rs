@@ -7,6 +7,31 @@ pub struct Config {
     pub style: StyleConfig,
     pub segments: Vec<SegmentConfig>,
     pub theme: String,
+    #[serde(default)]
+    pub width: WidthConfig,
+}
+
+/// How the statusline adapts to the terminal width Claude Code reports.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct WidthConfig {
+    /// Columns subtracted from `COLUMNS` before fitting the line, leaving
+    /// room for Claude Code's auto-compact message. Ignored when the exact
+    /// `CCLINE_WIDTH` env override is set.
+    pub reserve: usize,
+    /// When greater than 1 and a width budget is known, wrap fragments
+    /// across up to this many lines instead of truncating. Capped by the
+    /// `LINES` env var when present.
+    pub max_lines: usize,
+}
+
+impl Default for WidthConfig {
+    fn default() -> Self {
+        Self {
+            reserve: 40,
+            max_lines: 1,
+        }
+    }
 }
 
 // Default implementation moved to ui/themes/presets.rs

@@ -1,7 +1,7 @@
 use super::*;
 use crate::config::{
     AnsiColor, ColorConfig, Config, IconConfig, SegmentConfig, SegmentId, StyleConfig, StyleMode,
-    TextStyleConfig,
+    TextStyleConfig, WidthConfig,
 };
 use crate::core::segments::SegmentData;
 use std::collections::HashMap;
@@ -14,6 +14,7 @@ fn config_with_separator(separator: &str) -> Config {
         },
         segments: vec![],
         theme: "default".to_string(),
+        width: WidthConfig::default(),
     }
 }
 
@@ -246,5 +247,113 @@ fn width_phase_budgets_cjk_fragments_correctly() {
 
     let mut tight = RenderState::new(config_with_separator("|"), segments).with_max_width(Some(12));
     standard_pipeline().run(&mut tight);
-    assert_eq!(tight.fragments.len(), 1);
+    // The second fragment no longer fits whole: it comes back truncated.
+    assert!(tight.line.contains('…'));
+    assert!(palette::visible_width(&tight.line) <= 12);
+}
+
+fn segment_with_priority(
+    id: SegmentId,
+    primary: &str,
+    priority: i64,
+) -> (SegmentConfig, SegmentData) {
+    let (mut config, data) = segment(id, true, primary, None);
+    config
+        .options
+        .insert("priority".to_string(), serde_json::json!(priority));
+    (config, data)
+}
+
+#[test]
+fn truncate_visible_appends_ellipsis_and_reset() {
+    assert_eq!(palette::truncate_visible("abc", 3), "abc");
+    assert_eq!(palette::truncate_visible("abcdef", 4), "abc…\x1b[0m");
+    // CJK: budget 4 fits one wide char (2) + ellipsis (1).
+    assert_eq!(palette::truncate_visible("你好世", 4), "你…\x1b[0m");
+    // Escape sequences cost nothing and pass through.
+    assert_eq!(
+        palette::visible_width(&palette::truncate_visible("\x1b[31mabcdef\x1b[0m", 4)),
+        4
+    );
+}
+
+#[test]
+fn width_phase_truncates_single_overflowing_fragment_with_ellipsis() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![segment(
+            SegmentId::Model,
+            true,
+            "a very long fragment",
+            None,
+        )],
+    )
+    .with_max_width(Some(10));
+    standard_pipeline().run(&mut state);
+    assert_eq!(state.fragments.len(), 1);
+    assert!(state.line.contains('…'));
+    assert!(palette::visible_width(&state.line) <= 10);
+}
+
+#[test]
+fn width_phase_readds_final_fragment_truncated_when_room_allows() {
+    // "* aaaaaaaaaa" (12) + "|" + "* bbbbbbbbbb" (12) = 25 cols; budget 20
+    // drops the second fragment leaving 8 spare columns: enough to re-add
+    // it ellipsis-truncated.
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment(SegmentId::Model, true, "aaaaaaaaaa", None),
+            segment(SegmentId::Git, true, "bbbbbbbbbb", None),
+        ],
+    )
+    .with_max_width(Some(20));
+    standard_pipeline().run(&mut state);
+    assert_eq!(state.fragments.len(), 2);
+    assert!(state.line.contains('…'));
+    assert!(palette::visible_width(&state.line) <= 20);
+}
+
+#[test]
+fn width_phase_drops_lowest_priority_first() {
+    let mut state = RenderState::new(
+        config_with_separator("|"),
+        vec![
+            segment_with_priority(SegmentId::Model, "aaaa", 0),
+            segment_with_priority(SegmentId::Git, "bbbb", -5),
+            segment_with_priority(SegmentId::Usage, "cccc", 10),
+        ],
+    )
+    .with_max_width(Some(14));
+    standard_pipeline().run(&mut state);
+    // The middle fragment has the lowest priority and goes first.
+    assert!(state.line.contains("aaaa"));
+    assert!(!state.line.contains("bbbb"));
+    assert!(state.line.contains("cccc"));
+}
+
+#[test]
+fn separators_are_rebuilt_after_a_middle_fragment_is_removed() {
+    let red = AnsiColor::Color256 { c256: 1 };
+    let blue = AnsiColor::Color256 { c256: 4 };
+    let (mut low, low_data) = segment(SegmentId::Git, true, "bbbbbbbb", None);
+    low.options
+        .insert("priority".to_string(), serde_json::json!(-1));
+
+    let mut state = RenderState::new(
+        config_with_separator("\u{e0b0}"),
+        vec![
+            segment(SegmentId::Model, true, "aaaa", Some(red)),
+            (low, low_data),
+            segment(SegmentId::Usage, true, "cc", Some(blue)),
+        ],
+    )
+    .with_max_width(Some(15));
+    standard_pipeline().run(&mut state);
+    // The middle (no-background) fragment was removed; the remaining arrow
+    // must carry the red-to-blue transition of the surviving neighbours.
+    assert_eq!(state.fragments.len(), 2);
+    assert_eq!(state.separators.len(), 1);
+    assert!(state.separators[0].contains("\x1b[48;5;4m"));
+    assert!(state.separators[0].contains("\x1b[38;5;1m"));
 }

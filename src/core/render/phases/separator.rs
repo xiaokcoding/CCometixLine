@@ -11,18 +11,35 @@ pub struct SeparatorPhase;
 
 impl RenderPhase for SeparatorPhase {
     fn apply(&self, state: &mut RenderState) {
-        let separator = state.config.style.separator.clone();
+        build_separators(state);
+    }
+}
 
-        for i in 0..state.fragments.len().saturating_sub(1) {
-            let rendered = if separator == POWERLINE_ARROW {
-                let prev_bg = state.fragments[i].background.as_ref();
-                let curr_bg = state.fragments[i + 1].background.as_ref();
-                powerline_arrow(prev_bg, curr_bg)
-            } else {
-                format!("\x1b[37m{}\x1b[0m", separator)
-            };
-            state.separators.push(rendered);
-        }
+/// (Re)build the separator list from the current fragments. Called by the
+/// phase and again after the width phase removes fragments, so powerline
+/// color transitions stay correct around removed neighbours.
+pub fn build_separators(state: &mut RenderState) {
+    state.separators.clear();
+    for i in 0..state.fragments.len().saturating_sub(1) {
+        let rendered = render_separator(
+            &state.config.style.separator,
+            state.fragments[i].background.as_ref(),
+            state.fragments[i + 1].background.as_ref(),
+        );
+        state.separators.push(rendered);
+    }
+}
+
+/// Render the separator between two fragments given their background colors.
+pub fn render_separator(
+    separator: &str,
+    prev_bg: Option<&AnsiColor>,
+    curr_bg: Option<&AnsiColor>,
+) -> String {
+    if separator == POWERLINE_ARROW {
+        powerline_arrow(prev_bg, curr_bg)
+    } else {
+        format!("\x1b[37m{}\x1b[0m", separator)
     }
 }
 

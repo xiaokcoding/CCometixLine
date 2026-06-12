@@ -15,10 +15,21 @@ impl RenderPhase for CompositionPhase {
                 state.fragments.push(Fragment {
                     body,
                     background: config.colors.background.clone(),
+                    priority: segment_priority(config),
                 });
             }
         }
     }
+}
+
+/// Truncation priority from the segment's `priority` option (default 0).
+/// Higher values survive longer when the terminal is narrow.
+fn segment_priority(config: &SegmentConfig) -> i64 {
+    config
+        .options
+        .get("priority")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(0)
 }
 
 /// Render a single segment: icon, primary and secondary text, each in its

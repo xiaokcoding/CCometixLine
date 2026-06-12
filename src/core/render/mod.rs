@@ -17,7 +17,7 @@ mod tests;
 pub use phase::{RenderPhase, RenderPipeline};
 pub use state::{Fragment, RenderState};
 
-pub use phases::terminal_width;
+pub use phases::{terminal_lines, terminal_width};
 
 use phases::{CompositionPhase, FilterPhase, JoinPhase, SeparatorPhase, WidthPhase};
 
