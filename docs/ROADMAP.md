@@ -31,8 +31,8 @@
 
 ## P2 — 差异化（社区高频诉求 + Rust 端空白）
 
-1. **Token 速率 widget**：输入/输出 tokens/s，可配时间窗（ccstatusline v2.2.x
-   的新卖点，用量可见性是 30 天调研中最高频诉求）。
+1. ~~Token 速率 widget~~ ✅ 已实现（`token_rate` 段：滑动窗口输出 tok/s，
+   `options.window_seconds` 可配，默认 60s；从 transcript 时间戳无状态计算）。
 2. **周度 Sonnet/Opus 用量拆分**：对齐 Claude Code `/usage` 的模型拆分口径。
 3. ~~Subagent statusline~~ ✅ 已实现（`ccline --subagent`）。
 

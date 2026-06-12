@@ -162,3 +162,21 @@ pub fn usage_segment() -> SegmentConfig {
         },
     }
 }
+
+pub fn token_rate_segment() -> SegmentConfig {
+    SegmentConfig {
+        id: SegmentId::TokenRate,
+        enabled: false,
+        icon: IconConfig {
+            plain: "\u{26a1}".to_string(),
+            nerd_font: "\u{f0e7}".to_string(),
+        },
+        colors: ColorConfig {
+            icon: Some(AnsiColor::Color16 { c16: 11 }), // Yellow
+            text: Some(AnsiColor::Color16 { c16: 11 }),
+            background: None,
+        },
+        styles: TextStyleConfig::default(),
+        options: HashMap::new(),
+    }
+}

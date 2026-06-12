@@ -149,6 +149,15 @@ pub fn collect_all_segments(
                 let segment = OutputStyleSegment::new();
                 segment.collect(input)
             }
+            crate::config::SegmentId::TokenRate => {
+                let window = segment_config
+                    .options
+                    .get("window_seconds")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(60);
+                let segment = TokenRateSegment::new().with_window(window);
+                segment.collect(input)
+            }
             crate::config::SegmentId::Update => {
                 let segment = UpdateSegment::new();
                 segment.collect(input)

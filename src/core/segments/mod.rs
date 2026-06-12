@@ -5,6 +5,7 @@ pub mod git;
 pub mod model;
 pub mod output_style;
 pub mod session;
+pub mod token_rate;
 pub mod update;
 pub mod usage;
 
@@ -32,5 +33,6 @@ pub use git::GitSegment;
 pub use model::ModelSegment;
 pub use output_style::OutputStyleSegment;
 pub use session::SessionSegment;
+pub use token_rate::TokenRateSegment;
 pub use update::UpdateSegment;
 pub use usage::UsageSegment;
