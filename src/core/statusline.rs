@@ -158,6 +158,10 @@ pub fn collect_all_segments(
                 let segment = TokenRateSegment::new().with_window(window);
                 segment.collect(input)
             }
+            crate::config::SegmentId::WeeklyUsage => {
+                let segment = WeeklyUsageSegment::new();
+                segment.collect(input)
+            }
             crate::config::SegmentId::Update => {
                 let segment = UpdateSegment::new();
                 segment.collect(input)

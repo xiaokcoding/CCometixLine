@@ -99,6 +99,7 @@ pub enum SegmentId {
     OutputStyle,
     Update,
     TokenRate,
+    WeeklyUsage,
 }
 
 // Legacy compatibility structure

@@ -33,7 +33,9 @@
 
 1. ~~Token 速率 widget~~ ✅ 已实现（`token_rate` 段：滑动窗口输出 tok/s，
    `options.window_seconds` 可配，默认 60s；从 transcript 时间戳无状态计算）。
-2. **周度 Sonnet/Opus 用量拆分**：对齐 Claude Code `/usage` 的模型拆分口径。
+2. ~~周度 Sonnet/Opus 用量拆分~~ ✅ 已实现（`weekly_usage` 段：OAuth 登录走
+   官方 usage 接口显示 `W 42% · O 13%`，未登录回退本地 transcript 七天聚合
+   显示 `S 1.2M · O 300k`，600s 缓存）。
 3. ~~Subagent statusline~~ ✅ 已实现（`ccline --subagent`）。
 
 ## P3 — 工程质量

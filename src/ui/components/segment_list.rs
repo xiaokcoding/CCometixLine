@@ -58,6 +58,7 @@ impl SegmentListComponent {
                     SegmentId::OutputStyle => "Output Style",
                     SegmentId::Update => "Update",
                     SegmentId::TokenRate => "Token Rate",
+                    SegmentId::WeeklyUsage => "Weekly Usage",
                 };
 
                 if is_selected {
